@@ -1,13 +1,5 @@
 import express from "express";
 import { upload } from "../middleware/upload.js";
+import { removeBackground } from "../controllers/imageController.js";
 
-const router = express.Router();
-
-router.post("/", upload.single("image"), (req, res) => {
-  res.json({
-    message: "Uploaded",
-    file: req.file.originalname
-  });
-});
-
-export default router;
+router.post("/remove-bg", authMiddleware, removeBackground);
