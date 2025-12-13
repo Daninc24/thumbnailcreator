@@ -7,8 +7,12 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await registerUser(email, password);
-    alert(res.message);
+    try {
+      const res = await registerUser(email, password);
+      alert(res.message);
+    } catch (err: any) {
+      alert(err.message || "Registration failed");
+    }
   };
 
   return (
