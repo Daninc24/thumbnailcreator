@@ -6,11 +6,18 @@ import {
 	removeBackground,
 } from "../controllers/imageController.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { generateThumbnail } from "../controllers/uploadController.js";
 
 const router = express.Router();
 
 router.post("/", authMiddleware, upload.single("image"), uploadImage);
 router.get("/my-images", authMiddleware, getUserImages);
 router.post("/remove-bg", authMiddleware, removeBackground);
+router.post(
+  "/generate-thumbnail",
+  authMiddleware,
+  generateThumbnail
+);
+
 
 export default router;
