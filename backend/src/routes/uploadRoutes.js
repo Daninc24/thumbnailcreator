@@ -1,23 +1,27 @@
 import express from "express";
-import { upload } from "../middleware/upload.js";
+import multer from "multer";
 import {
-	uploadImage,
-	getUserImages,
-	removeBackground,
+  uploadImage,
+  getUserImages,
+  removeBackground,
+  generateThumbnail,
 } from "../controllers/imageController.js";
-import { authMiddleware } from "../middleware/auth.js";
-import { generateThumbnail } from "../controllers/uploadController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/", authMiddleware, upload.single("image"), uploadImage);
-router.get("/my-images", authMiddleware, getUserImages);
-router.post("/remove-bg", authMiddleware, removeBackground);
-router.post(
-  "/generate-thumbnail",
-  authMiddleware,
-  generateThumbnail
-);
+const storage = multer.diskStorage({
+  destination: "uploads",
+  filename: (_, file, cb) => {
+    cb(null, Date.now() + "_" + file.originalname);
+  },
+});
 
+const upload = multer({ storage });
+
+router.post("/", protect, upload.single("image"), uploadImage);
+router.get("/my-images", protect, getUserImages);
+router.post("/remove-bg", protect, removeBackground);
+router.post("/generate-thumbnail", protect, generateThumbnail);
 
 export default router;

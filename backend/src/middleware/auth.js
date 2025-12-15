@@ -14,3 +14,6 @@ export const authMiddleware = async (req, res, next) => {
     res.status(401).json({ message: "Invalid token" });
   }
 };
+
+// Backwards-compatible alias for routes expecting `protect`
+export const protect = authMiddleware;

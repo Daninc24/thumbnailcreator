@@ -44,12 +44,15 @@ const Dashboard = () => {
 
   const handleGenerateThumbnail = async (imageUrl: string) => {
     setLoading(true);
+
     await axiosInstance.post("/upload/generate-thumbnail", {
       imageUrl,
       style,
       text: texts[imageUrl] || "",
     });
+
     await fetchImages();
+    setLoading(false);
   };
 
   return (
@@ -58,7 +61,10 @@ const Dashboard = () => {
 
       {/* Upload */}
       <div className="bg-slate-800 p-4 rounded-lg mb-6 space-y-3">
-        <input type="file" onChange={(e) => e.target.files && setFile(e.target.files[0])} />
+        <input
+          type="file"
+          onChange={(e) => e.target.files && setFile(e.target.files[0])}
+        />
 
         <select
           value={style}
@@ -74,7 +80,7 @@ const Dashboard = () => {
         <button
           onClick={handleUpload}
           disabled={loading}
-          className="bg-blue-600 py-2 rounded w-full"
+          className="bg-blue-600 py-2 rounded w-full hover:bg-blue-700 transition-colors hover:cursor-grab"
         >
           Upload Image
         </button>
@@ -93,14 +99,17 @@ const Dashboard = () => {
               placeholder="Thumbnail text"
               value={texts[img.url] || ""}
               onChange={(e) =>
-                setTexts({ ...texts, [img.url]: e.target.value })
+                setTexts((prev) => ({
+                  ...prev,
+                  [img.url]: e.target.value,
+                }))
               }
-              className="bg-slate-700 p-2 rounded w-full mb-2"
+              className="bg-slate-700 p-2 rounded w-full"
             />
 
             <button
               onClick={() => handleRemoveBG(img.url)}
-              className="bg-purple-600 w-full py-1 rounded mb-2"
+              className="bg-purple-600 w-full py-1 rounded mb-2 hover:bg-purple-800 transition-colors"
               disabled={loading}
             >
               Remove BG
@@ -108,7 +117,7 @@ const Dashboard = () => {
 
             <button
               onClick={() => handleGenerateThumbnail(img.url)}
-              className="bg-green-600 w-full py-1 rounded"
+              className="bg-green-600 w-full py-1 rounded hover:bg-green-800 transition-colors hover:cursor-grab"
               disabled={loading}
             >
               Generate Thumbnails
