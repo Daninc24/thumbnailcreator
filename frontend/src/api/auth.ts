@@ -2,6 +2,7 @@ import axiosInstance from "./axiosInstance";
 
 export interface AuthResponse {
   message: string;
+  token?: string;
 }
 
 export const registerUser = async (email: string, password: string): Promise<AuthResponse> => {

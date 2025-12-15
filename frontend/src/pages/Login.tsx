@@ -8,15 +8,22 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await loginUser(email, password);
-      alert(res.message);
+  e.preventDefault();
+  try {
+    const res = await loginUser(email, password);
+
+    if (res.token) {
+      localStorage.setItem("token", res.token); // <-- Save JWT here
+      alert(res.message || "Login successful");
       navigate("/dashboard", { replace: true });
-    } catch (err: any) {
-      alert(err.message || "Login failed");
+    } else {
+      alert("No token returned from server");
     }
-  };
+  } catch (err: any) {
+    alert(err.message || "Login failed");
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="p-4">

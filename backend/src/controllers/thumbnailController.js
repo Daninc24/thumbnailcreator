@@ -1,67 +1,68 @@
-import sharp from "sharp";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import sharp from "sharp";
+import { createCanvas, loadImage } from "canvas";
 import User from "../models/User.js";
-import { stylePresets } from "../utils/styles.js";
 
 export const generateThumbnail = async (req, res) => {
-  const { imageUrl, style, text = "WATCH THIS!" } = req.body;
+  const { imageUrl, style, text } = req.body;
   const userId = req.user.id;
 
   try {
-    const preset = stylePresets[style];
-    if (!preset) return res.status(400).json({ message: "Invalid style" });
-
     const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
     const image = user.images.find((img) => img.url === imageUrl);
+    if (!image) return res.status(404).json({ message: "Image not found" });
 
-    const inputPath = path.join(process.cwd(), image.url);
-    const outputs = [];
+    const inputPath = path.resolve(image.url);
+    const outputFile = `thumb_${Date.now()}.png`;
+    const outputPath = path.join("uploads", outputFile);
 
-    for (let i = 0; i < 3; i++) {
-      const outName = `thumb_${Date.now()}_${i}.png`;
-      const outPath = path.join("uploads", outName);
+    // Resize base image
+    const baseBuffer = await sharp(inputPath)
+      .resize(1280, 720)
+      .toBuffer();
 
-      await sharp(inputPath)
-        .modulate({ saturation: preset.saturation })
-        .linear(preset.contrast)
-        .resize(1280, 720)
-        .composite([
-          {
-            input: Buffer.from(`
-              <svg width="1280" height="720">
-                <text x="50%" y="85%"
-                  font-size="${preset.fontSize}"
-                  fill="${preset.color}"
-                  text-anchor="middle"
-                  font-weight="bold"
-                  font-family="Arial">
-                  ${text}
-                </text>
-              </svg>
-            `),
-            gravity: "south",
-          },
-        ])
-        .toFile(outPath);
+    const img = await loadImage(baseBuffer);
+    const canvas = createCanvas(1280, 720);
+    const ctx = canvas.getContext("2d");
 
-      user.images.push({
-        url: outPath,
-        processed: true,
-        style,
-      });
+    ctx.drawImage(img, 0, 0, 1280, 720);
 
-      outputs.push(outPath);
-    }
+    // 🎨 Style presets
+    const styleConfig = {
+      MrBeast: { color: "#FFD700", size: 90 },
+      Vlog: { color: "#FFFFFF", size: 70 },
+      Education: { color: "#00FFAA", size: 60 },
+      Gaming: { color: "#FF004C", size: 80 },
+    };
 
+    const preset = styleConfig[style] || styleConfig.MrBeast;
+
+    // Text styling
+    ctx.font = `bold ${preset.size}px Impact`;
+    ctx.fillStyle = preset.color;
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 8;
+    ctx.textAlign = "center";
+
+    ctx.strokeText(text, 640, 650);
+    ctx.fillText(text, 640, 650);
+
+    // Save thumbnail
+    const buffer = canvas.toBuffer("image/png");
+    fs.writeFileSync(outputPath, buffer);
+
+    user.images.push({ url: outputPath, processed: true });
     await user.save();
 
     res.json({
-      message: "Thumbnails generated",
-      thumbnails: outputs,
+      message: "Thumbnail generated",
+      file: outputPath,
     });
   } catch (err) {
-    console.error(err);
+    console.error("THUMBNAIL ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
