@@ -5,6 +5,12 @@ import FormData from "form-data";
 import sharp from "sharp";
 import User from "../models/User.js";
 
+// Import io dynamically to avoid circular dependency
+let ioInstance = null;
+export const setIO = (io) => {
+  ioInstance = io;
+};
+
 /* ===============================
    UPLOAD IMAGE
 ================================ */
@@ -17,25 +23,84 @@ export const uploadImage = async (req, res) => {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      fs.unlinkSync(file.path); // Delete invalid file
+      return res.status(400).json({ message: "Invalid file type. Only JPEG, PNG, and WebP are allowed." });
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      fs.unlinkSync(file.path); // Delete oversized file
+      return res.status(400).json({ message: "File too large. Maximum size is 10MB." });
+    }
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Store relative path with forward slashes for URLs (works on all platforms)
-    const filename = path.basename(file.path);
-    const storedPath = `uploads/${filename}`.replace(/\\/g, '/');
+    // Optimize image: resize if too large and compress
+    const optimizedFilename = `opt_${Date.now()}${path.extname(file.originalname)}`;
+    const optimizedPath = path.join(path.dirname(file.path), optimizedFilename);
+    
+    try {
+      // Resize if width > 1920px, maintain aspect ratio, and compress
+      await sharp(file.path)
+        .resize(1920, 1920, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 85, mozjpeg: true })
+        .toFile(optimizedPath);
 
-    user.images.push({
-      url: storedPath,
-      processed: false,
-      type: "original",
-    });
+      // Delete original and use optimized version
+      fs.unlinkSync(file.path);
+      
+      // Store relative path with forward slashes for URLs
+      const storedPath = `uploads/${optimizedFilename}`.replace(/\\/g, '/');
 
-    await user.save();
+      user.images.push({
+        url: storedPath,
+        processed: false,
+        type: "original",
+        createdAt: new Date()
+      });
 
-    res.status(201).json({
-      message: "Image uploaded successfully",
-      file: storedPath,
-    });
+      await user.save();
+
+      // Emit Socket.IO notification
+      if (ioInstance) {
+        ioInstance.to(`user-${userId}`).emit("image-processed", {
+          type: "image-uploaded",
+          imageUrl: storedPath
+        });
+      }
+
+      res.status(201).json({
+        message: "Image uploaded and optimized successfully",
+        file: storedPath,
+      });
+    } catch (optimizeError) {
+      // If optimization fails, use original file
+      console.error("Optimization error, using original:", optimizeError);
+      const filename = path.basename(file.path);
+      const storedPath = `uploads/${filename}`.replace(/\\/g, '/');
+      
+      user.images.push({
+        url: storedPath,
+        processed: false,
+        type: "original",
+        createdAt: new Date()
+      });
+
+      await user.save();
+
+      res.status(201).json({
+        message: "Image uploaded successfully",
+        file: storedPath,
+      });
+    }
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -43,7 +108,7 @@ export const uploadImage = async (req, res) => {
 };
 
 /* ===============================
-   GET USER IMAGES
+   GET USER IMAGES with Pagination and Filters
 ================================ */
 export const getUserImages = async (req, res) => {
   try {
@@ -51,8 +116,56 @@ export const getUserImages = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Return images array from the user document
-    res.json({ images: user.images });
+    let images = [...user.images]; // Copy array to avoid mutating original
+
+    // Filter by processed status
+    if (req.query.processed !== undefined) {
+      const processed = req.query.processed === 'true';
+      images = images.filter(img => img.processed === processed);
+    }
+
+    // Filter by type
+    if (req.query.type) {
+      images = images.filter(img => img.type === req.query.type);
+    }
+
+    // Filter by has thumbnail
+    if (req.query.hasThumbnail === 'true') {
+      images = images.filter(img => img.thumbnail);
+    }
+
+    // Search by filename (if needed)
+    if (req.query.search) {
+      const searchTerm = req.query.search.toLowerCase();
+      images = images.filter(img => 
+        img.url.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Sort by date (newest first)
+    images.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const paginatedImages = images.slice(startIndex, endIndex);
+
+    res.json({
+      images: paginatedImages,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(images.length / limit),
+        totalImages: images.length,
+        hasMore: endIndex < images.length
+      }
+    });
   } catch (err) {
     console.error("GET IMAGES ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -192,6 +305,15 @@ export const generateThumbnailLogic = async (userId, imageUrl, style, text) => {
     style: style 
   });
   await user.save();
+  
+  // Emit Socket.IO notification
+  if (ioInstance) {
+    ioInstance.to(`user-${userId}`).emit("image-processed", {
+      type: "thumbnail-generated",
+      imageUrl: outputPath,
+      originalUrl: imageUrl
+    });
+  }
 };
 
 // Route handler for generate thumbnail
