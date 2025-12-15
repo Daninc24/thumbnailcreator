@@ -40,6 +40,7 @@ const Dashboard = () => {
     setLoading(true);
     await axiosInstance.post("/upload/remove-bg", { imageUrl });
     await fetchImages();
+    setLoading(false);
   };
 
   const handleGenerateThumbnail = async (imageUrl: string) => {

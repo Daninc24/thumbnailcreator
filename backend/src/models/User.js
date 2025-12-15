@@ -10,7 +10,23 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
   credits: { type: Number, default: 3 },
-  images: [imageSchema]
+  images: [
+  {
+    url: String,
+    processed: Boolean,
+    type: {
+      type: String,
+      enum: ["original", "bg_removed", "thumbnail"],
+      default: "original",
+    },
+    style: String,
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+]
+
 });
 
 export default mongoose.model("User", userSchema);

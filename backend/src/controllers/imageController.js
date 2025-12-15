@@ -18,7 +18,7 @@ export const uploadImage = async (req, res) => {
 
     user.images.push({
       url: storedPath,
-      processed: false,
+      type: "original",
     });
 
     await user.save();
@@ -51,9 +51,11 @@ export const removeBackground = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    // ⚠️ FALLBACK: Just mark as processed
-    image.processed = true;
-    await user.save();
+    user.images.push({
+      url: outputPath,
+      processed: true,
+      type: "bg_removed",
+    });
 
     res.json({
       message:
@@ -104,8 +106,9 @@ export const generateThumbnail = async (req, res) => {
         .toFile(outPath);
 
       user.images.push({
-        url: outPath,
+        url: newFile,
         processed: true,
+        type: "thumbnail",
         style,
       });
 
