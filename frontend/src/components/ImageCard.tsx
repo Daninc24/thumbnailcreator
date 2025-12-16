@@ -120,15 +120,31 @@ const ImageCard: React.FC<ImageCardProps> = ({
             </div>
           </div>
         ) : (
-          <img
-            src={`http://localhost:5000/${image.thumbnail || image.url}`}
-            alt="Thumbnail"
-            className={`w-full h-full object-cover transition-opacity duration-200 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
-          />
+          // Check if it's a video file
+          image.url.endsWith('.mp4') || image.type === 'video' || image.type === 'ai-video' ? (
+            <video
+              src={`http://localhost:5000/${image.url}`}
+              className={`w-full h-full object-cover transition-opacity duration-200 ${
+                imageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoadedData={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              muted
+              loop
+              playsInline
+              controls
+            />
+          ) : (
+            <img
+              src={`http://localhost:5000/${image.thumbnail || image.url}`}
+              alt="Thumbnail"
+              className={`w-full h-full object-cover transition-opacity duration-200 ${
+                imageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+          )
         )}
 
         {/* Processing Overlay */}

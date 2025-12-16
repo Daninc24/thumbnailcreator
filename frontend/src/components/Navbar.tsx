@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getProfile } from "../api/user";
 import { getSubscription } from "../api/subscription";
-import QuotaDisplay from "./QuotaDisplay";
+// import QuotaDisplay from "./QuotaDisplay"; // Unused import
 import type { Subscription } from "../api/subscription";
 
 interface UserProfile {

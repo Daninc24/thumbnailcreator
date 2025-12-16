@@ -4,7 +4,7 @@ import { generateUniqueId } from "../utils/uniqueId";
 export interface Toast {
   id: string;
   message: string;
-  type: "success" | "error" | "info";
+  type: "success" | "error" | "info" | "warning";
 }
 
 const toastContainer: Toast[] = [];
@@ -51,6 +51,18 @@ export const toast = {
       }
     }, 4000);
   },
+  warning: (message: string) => {
+    const id = generateUniqueId('toast');
+    toastContainer.push({ id, message, type: "warning" });
+    notifyListeners();
+    setTimeout(() => {
+      const index = toastContainer.findIndex((t) => t.id === id);
+      if (index > -1) {
+        toastContainer.splice(index, 1);
+        notifyListeners();
+      }
+    }, 4000);
+  },
 };
 
 export const ToastContainer = () => {
@@ -81,6 +93,8 @@ export const ToastContainer = () => {
               ? "bg-green-600"
               : toast.type === "error"
               ? "bg-red-600"
+              : toast.type === "warning"
+              ? "bg-yellow-600"
               : "bg-blue-600"
           } animate-in slide-in-from-top-5`}
         >

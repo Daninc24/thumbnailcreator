@@ -76,7 +76,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   const duplicateTemplate = async (template: SavedTemplate) => {
     try {
-      const response = await axiosInstance.post("/templates/duplicate", {
+      await axiosInstance.post("/templates/duplicate", {
         templateId: template._id,
         name: `${template.name} - Copy`
       });
@@ -219,8 +219,11 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                       const blankTemplate: ThumbnailTemplate = {
                         id: `blank_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                         name: "Blank Template",
+                        description: "A blank template for custom designs",
                         category: "custom",
                         difficulty: "beginner",
+                        preview: "",
+                        tags: ["blank", "custom"],
                         textConfig: {
                           fontSize: 72,
                           fontFamily: "Arial",
@@ -228,7 +231,10 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                           strokeColor: "#000000",
                           strokeWidth: 2,
                           position: "center",
-                          alignment: "center"
+                          alignment: "center",
+                          maxLines: 3,
+                          lineHeight: 1.2,
+                          padding: { x: 40, y: 60 }
                         },
                         backgroundEffects: {},
                         decorativeElements: {}

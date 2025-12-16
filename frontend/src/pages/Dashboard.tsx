@@ -519,14 +519,14 @@ const Dashboard = () => {
 
   const handleSaveAdvancedTemplate = async (template: CustomizableTemplate, name: string) => {
     try {
-      const response = await axiosInstance.post("/templates/save", {
+      await axiosInstance.post("/templates/save", {
         name,
         category: template.category,
         difficulty: template.difficulty,
         textConfig: template.textConfig,
         backgroundEffects: template.backgroundEffects,
         decorativeElements: template.decorativeElements,
-        layers: template.customizations?.layers || [],
+        layers: (template as any).customizations?.layers || [],
         isPublic: false
       });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { toast } from "./Toast";
+// import { toast } from "./Toast"; // Unused import
 
 interface ContentCreationAssistantProps {
   onTextSuggestion: (text: string) => void;
@@ -20,7 +20,7 @@ interface ContentAnalysis {
 const ContentCreationAssistant: React.FC<ContentCreationAssistantProps> = ({
   onTextSuggestion,
   onColorSuggestion,
-  onTemplateSuggestion,
+  // onTemplateSuggestion, // Unused parameter
   currentText,
   category
 }) => {

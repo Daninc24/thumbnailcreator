@@ -1,7 +1,7 @@
 export interface ThumbnailTemplate {
   id: string;
   name: string;
-  category: "gaming" | "vlog" | "education" | "business" | "entertainment" | "tech" | "fitness" | "food";
+  category: "gaming" | "vlog" | "education" | "business" | "entertainment" | "tech" | "fitness" | "food" | "custom";
   description: string;
   preview: string;
   tags: string[];

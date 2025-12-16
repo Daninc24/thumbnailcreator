@@ -87,7 +87,7 @@ const ThumbnailPreview: React.FC<ThumbnailPreviewProps> = ({
             src={previewUrl}
             alt="Preview"
             className="w-full h-full object-cover"
-            onError={(e) => {
+            onError={(_e) => {
               console.error("Image failed to load:", previewUrl);
               setImageLoading(false);
               setPreviewUrl("");

@@ -34,7 +34,7 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
     }
   }));
 
-  const [presets, setPresets] = useState({
+  const [presets] = useState({
     fontFamilies: [
       { name: "Impact", value: "Impact, Arial Black, sans-serif" },
       { name: "Arial Black", value: "Arial Black, sans-serif" },
@@ -113,7 +113,7 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
       decorativeElements: {
         ...prev.decorativeElements,
         [category]: {
-          ...prev.decorativeElements?.[category as keyof typeof prev.decorativeElements],
+          ...((prev.decorativeElements as any)?.[category] || {}),
           [key]: value
         }
       },
@@ -122,7 +122,7 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
         decorativeElements: {
           ...prev.customizations.decorativeElements,
           [category]: {
-            ...prev.customizations.decorativeElements?.[category as keyof typeof prev.customizations.decorativeElements],
+            ...((prev.customizations.decorativeElements as any)?.[category] || {}),
             [key]: value
           }
         }

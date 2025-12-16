@@ -6,10 +6,24 @@ const paymentSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  // Payment method specific IDs
   stripePaymentIntentId: {
     type: String,
+    sparse: true, // Allow null values but maintain uniqueness when present
+  },
+  mpesaCheckoutRequestId: {
+    type: String,
+    sparse: true,
+  },
+  mpesaReceiptNumber: {
+    type: String,
+    sparse: true,
+  },
+  // Payment details
+  paymentMethod: {
+    type: String,
+    enum: ["stripe", "mpesa"],
     required: true,
-    unique: true,
   },
   amount: {
     type: Number,
@@ -17,7 +31,8 @@ const paymentSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    default: "usd",
+    enum: ["usd", "kes"],
+    required: true,
   },
   plan: {
     type: String,
@@ -33,6 +48,10 @@ const paymentSchema = new mongoose.Schema({
     customerEmail: String,
     customerName: String,
     description: String,
+    phoneNumber: String, // For M-Pesa
+    transactionRef: String,
+    merchantRequestId: String,
+    resultDesc: String,
   },
   createdAt: {
     type: Date,

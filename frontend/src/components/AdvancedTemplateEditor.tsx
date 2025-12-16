@@ -26,7 +26,7 @@ interface Layer {
 const AdvancedTemplateEditor: React.FC<AdvancedTemplateEditorProps> = ({
   template,
   imageUrl,
-  onTemplateChange,
+  // onTemplateChange, // Unused parameter
   onSave,
   onClose
 }) => {
@@ -35,8 +35,8 @@ const AdvancedTemplateEditor: React.FC<AdvancedTemplateEditorProps> = ({
   const [selectedLayer, setSelectedLayer] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<"layers" | "properties" | "assets">("layers");
   const [templateName, setTemplateName] = useState(`${template.name} - Custom`);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // const [isDragging, setIsDragging] = useState(false); // Unused state
+  // const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }); // Unused state
   const [zoom, setZoom] = useState(1);
   const [canvasSize] = useState({ width: 1280, height: 720 });
 
@@ -741,7 +741,12 @@ const AdvancedTemplateEditor: React.FC<AdvancedTemplateEditorProps> = ({
                   {
                     ...template,
                     isCustom: true,
-                    customizations: { layers }
+                    customizations: { 
+                      layers,
+                      textConfig: template.textConfig || {},
+                      backgroundEffects: template.backgroundEffects || {},
+                      decorativeElements: template.decorativeElements || {}
+                    }
                   } as CustomizableTemplate,
                   templateName
                 )}

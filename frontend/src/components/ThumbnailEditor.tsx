@@ -34,7 +34,7 @@ const ThumbnailEditor: React.FC<ThumbnailEditorProps> = ({
   const getSuggestedTexts = () => {
     if (!selectedTemplate) return [];
     
-    const categoryTexts = {
+    const categoryTexts: Record<string, string[]> = {
       gaming: ["EPIC WIN!", "GAME OVER", "LEGENDARY", "BOSS FIGHT", "NEW RECORD"],
       vlog: ["MY STORY", "DAILY LIFE", "BEHIND SCENES", "REAL TALK", "HONEST REVIEW"],
       education: ["LEARN THIS", "TUTORIAL", "STEP BY STEP", "EXPLAINED", "MASTERCLASS"],
@@ -42,7 +42,8 @@ const ThumbnailEditor: React.FC<ThumbnailEditorProps> = ({
       entertainment: ["HILARIOUS", "MUST WATCH", "SHOCKING", "INCREDIBLE", "VIRAL"],
       tech: ["REVIEW", "UNBOXING", "COMPARISON", "TECH NEWS", "INNOVATION"],
       fitness: ["WORKOUT", "TRANSFORM", "STRONG", "FITNESS TIPS", "RESULTS"],
-      food: ["DELICIOUS", "RECIPE", "COOKING", "TASTY", "FOODIE"]
+      food: ["DELICIOUS", "RECIPE", "COOKING", "TASTY", "FOODIE"],
+      custom: ["AMAZING RESULTS!", "YOU WON'T BELIEVE THIS", "SHOCKING TRUTH", "MUST WATCH", "INCREDIBLE"]
     };
     
     return categoryTexts[selectedTemplate.category] || [
@@ -107,7 +108,7 @@ const ThumbnailEditor: React.FC<ThumbnailEditorProps> = ({
               Quick Suggestions for {selectedTemplate?.category || "General"}
             </label>
             <div className="flex flex-wrap gap-2">
-              {getSuggestedTexts().map((suggestion) => (
+              {getSuggestedTexts().map((suggestion: string) => (
                 <button
                   key={suggestion}
                   onClick={() => setText(suggestion)}

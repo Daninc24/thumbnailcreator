@@ -7,15 +7,15 @@ const imageSchema = new mongoose.Schema({
 });
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, unique: true },
-  password: String,
+  email: { type: String, required: true, lowercase: true, trim: true },
+  password: { type: String, required: true },
   credits: { type: Number, default: 3 },
   role: { 
     type: String, 
     enum: ["user", "admin"], 
     default: "user" 
   },
-  stripeCustomerId: { type: String, default: null },
+  stripeCustomerId: { type: String, default: null, sparse: true },
   subscription: {
     plan: { 
       type: String, 
@@ -62,7 +62,15 @@ const userSchema = new mongoose.Schema({
     downloadedAt: Date,
   },
 ]
-
+}, {
+  timestamps: true // Adds createdAt and updatedAt automatically
 });
+
+// Indexes for better query performance
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ 'subscription.plan': 1 });
+userSchema.index({ 'subscription.expiresAt': 1 });
+userSchema.index({ createdAt: -1 });
 
 export default mongoose.model("User", userSchema);

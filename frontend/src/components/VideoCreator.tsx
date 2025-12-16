@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { VideoTemplate, VideoLayer, VideoProject, VideoExportSettings } from "../types/video";
 import { videoTemplates } from "../types/video";
-import { getPlatformSettings, createVideo } from "../api/video";
+import { createVideo } from "../api/video";
 import { toast } from "./Toast";
 import LoadingSpinner from "./LoadingSpinner";
 import AIVideoGenerator from "./AIVideoGenerator";
@@ -63,9 +63,7 @@ const VideoCreator: React.FC<VideoCreatorProps> = ({
         setSystemCapabilities(capabilities);
         
         if (!capabilities.ffmpeg) {
-          toast.error("FFmpeg not installed. Basic video features available. Install FFmpeg for full functionality.", {
-            duration: 8000
-          });
+          toast.error("FFmpeg not installed. Basic video features available. Install FFmpeg for full functionality.");
         }
       } catch (error) {
         console.error('Failed to check system capabilities:', error);
