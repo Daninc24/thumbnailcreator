@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { generateUniqueId } from "../utils/uniqueId";
 
 export interface Toast {
   id: string;
@@ -15,7 +16,7 @@ const notifyListeners = () => {
 
 export const toast = {
   success: (message: string) => {
-    const id = Date.now().toString();
+    const id = generateUniqueId('toast');
     toastContainer.push({ id, message, type: "success" });
     notifyListeners();
     setTimeout(() => {
@@ -27,7 +28,7 @@ export const toast = {
     }, 4000);
   },
   error: (message: string) => {
-    const id = Date.now().toString();
+    const id = generateUniqueId('toast');
     toastContainer.push({ id, message, type: "error" });
     notifyListeners();
     setTimeout(() => {
@@ -39,7 +40,7 @@ export const toast = {
     }, 4000);
   },
   info: (message: string) => {
-    const id = Date.now().toString();
+    const id = generateUniqueId('toast');
     toastContainer.push({ id, message, type: "info" });
     notifyListeners();
     setTimeout(() => {

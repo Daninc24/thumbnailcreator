@@ -303,20 +303,6 @@ export const generateThumbnailLogic = async (userId, imageUrl, templateData, tex
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found");
 
-  // Check quota before processing (skip for admins)
-  if (user.role !== "admin") {
-    if (!user.subscription) {
-      throw new Error("No subscription found");
-    }
-    
-    const quotaUsed = user.subscription.used || 0;
-    const quotaLimit = user.subscription.quota || 10;
-    
-    if (quotaUsed >= quotaLimit) {
-      throw new Error(`Quota exceeded. You have used ${quotaUsed}/${quotaLimit} images this month. Please upgrade your plan.`);
-    }
-  }
-
   // Find the processed/bg-removed image to use
   const image = user.images.find((img) => img.url === imageUrl && img.processed);
   if (!image) {
@@ -618,13 +604,9 @@ function generateStarPoints(cx, cy, outerRadius, innerRadius, points) {
     type: "thumbnail",
     thumbnail: outputPath,
     template: templateData?.name || "Custom",
-    thumbnailGeneratedAt: new Date()
+    thumbnailGeneratedAt: new Date(),
+    downloaded: false // Track if this thumbnail has been downloaded
   });
-
-  // Increment quota usage (skip for admins)
-  if (user.role !== "admin" && user.subscription) {
-    user.subscription.used = (user.subscription.used || 0) + 1;
-  }
 
   await user.save();
   
@@ -853,6 +835,7 @@ export const generateThumbnailBulk = async (req, res) => {
 export const downloadImage = async (req, res) => {
   try {
     const { imageUrl } = req.query;
+    const userId = req.user._id || req.user.id;
     
     if (!imageUrl) {
       return res.status(400).json({ message: "imageUrl is required" });
@@ -863,6 +846,39 @@ export const downloadImage = async (req, res) => {
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).send("File not found");
+    }
+
+    // Check if this is a thumbnail and handle quota
+    const user = await User.findById(userId);
+    if (user && user.role !== "admin") {
+      const imageRecord = user.images.find(img => img.url === imageUrl);
+      
+      // Only deduct quota for thumbnails that haven't been downloaded before
+      if (imageRecord && imageRecord.type === "thumbnail" && !imageRecord.downloaded) {
+        // Check quota before allowing download
+        if (!user.subscription) {
+          return res.status(403).json({ message: "No subscription found" });
+        }
+        
+        const quotaUsed = user.subscription.used || 0;
+        const quotaLimit = user.subscription.quota || 10;
+        
+        if (quotaUsed >= quotaLimit) {
+          return res.status(403).json({ 
+            message: `Quota exceeded. You have used ${quotaUsed}/${quotaLimit} images this month. Please upgrade your plan.`,
+            quotaUsed,
+            quotaLimit
+          });
+        }
+
+        // Mark as downloaded and increment quota
+        imageRecord.downloaded = true;
+        imageRecord.downloadedAt = new Date();
+        user.subscription.used = (user.subscription.used || 0) + 1;
+        await user.save();
+
+        console.log(`Quota deducted for user ${userId}: ${user.subscription.used}/${user.subscription.quota}`);
+      }
     }
 
     res.download(filePath, path.basename(filePath));

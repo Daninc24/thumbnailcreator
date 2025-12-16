@@ -9,6 +9,9 @@ import authRoutes from "./routes/authRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
+import templateRoutes from "./routes/templateRoutes.js";
+import videoRoutes from "./routes/videoRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -21,7 +24,23 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow any localhost port for development
+    if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+    
+    // Allow specific origins in production
+    const allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -36,6 +55,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/templates", templateRoutes);
+app.use("/api/videos", videoRoutes);
 
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
@@ -45,7 +67,17 @@ const server = app.listen(PORT, () => {
 // Setup Socket.IO after server is created
 export const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+      
+      // Allow any localhost port for development
+      if (origin.match(/^http:\/\/localhost:\d+$/)) {
+        return callback(null, true);
+      }
+      
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
   }
 });
@@ -58,7 +90,9 @@ global.io = io;
 
 // Set io instance for use in controllers (backward compatibility)
 import { setIO } from "./controllers/imageController.js";
+import { setVideoIO } from "./controllers/videoController.js";
 setIO(io);
+setVideoIO(io);
 
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);

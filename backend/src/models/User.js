@@ -34,17 +34,32 @@ const userSchema = new mongoose.Schema({
     processed: Boolean,
     type: {
       type: String,
-      enum: ["original", "bg_removed", "thumbnail"],
+      enum: ["original", "bg_removed", "thumbnail", "uploaded-video", "video", "ai-video"],
       default: "original",
     },
     style: String,
     thumbnail: String,
+    template: String, // For video templates
+    downloaded: { type: Boolean, default: false },
+    metadata: {
+      duration: Number,
+      width: Number,
+      height: Number,
+      fps: Number,
+      codec: String,
+      bitrate: Number,
+      size: Number,
+      note: String
+    },
+    aiGenerated: { type: Boolean, default: false },
+    aiPrompt: String,
     createdAt: {
       type: Date,
       default: Date.now,
     },
     bgRemovedAt: Date,
     thumbnailGeneratedAt: Date,
+    downloadedAt: Date,
   },
 ]
 

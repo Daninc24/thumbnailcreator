@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { ThumbnailTemplate, CustomizableTemplate } from "../types/templates";
 import ThumbnailPreview from "./ThumbnailPreview";
+import AISuggestions from "./AISuggestions";
 
 interface ThumbnailCustomizerProps {
   template: ThumbnailTemplate;
@@ -8,6 +9,7 @@ interface ThumbnailCustomizerProps {
   imageUrl: string;
   onCustomizationChange: (customizedTemplate: CustomizableTemplate) => void;
   onGenerate: (template: CustomizableTemplate, text: string) => void;
+  onTextChange: (text: string) => void;
   processing: boolean;
 }
 
@@ -17,9 +19,10 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
   imageUrl,
   onCustomizationChange,
   onGenerate,
+  onTextChange,
   processing
 }) => {
-  const [activeTab, setActiveTab] = useState<"text" | "background" | "decorative" | "effects">("text");
+  const [activeTab, setActiveTab] = useState<"text" | "ai" | "background" | "decorative" | "effects">("text");
   const [customTemplate, setCustomTemplate] = useState<CustomizableTemplate>(() => ({
     ...template,
     isCustom: false,
@@ -142,6 +145,7 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
 
   const tabs = [
     { id: "text", name: "Text", icon: "📝" },
+    { id: "ai", name: "AI Suggestions", icon: "🤖" },
     { id: "background", name: "Background", icon: "🎨" },
     { id: "decorative", name: "Elements", icon: "✨" },
     { id: "effects", name: "Effects", icon: "🎭" }
@@ -221,6 +225,21 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
           {activeTab === "text" && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white">Text Settings</h3>
+              
+              {/* Text Content */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Text Content</label>
+                <textarea
+                  value={text}
+                  onChange={(e) => onTextChange(e.target.value)}
+                  placeholder="Enter your thumbnail text..."
+                  rows={3}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Keep it short and impactful for better readability
+                </p>
+              </div>
               
               {/* Font Family */}
               <div>
@@ -445,6 +464,20 @@ const ThumbnailCustomizer: React.FC<ThumbnailCustomizerProps> = ({
                   className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
                 />
               </div>
+            </div>
+          )}
+
+          {/* AI Suggestions */}
+          {activeTab === "ai" && (
+            <div className="space-y-4">
+              <AISuggestions
+                category={template.category}
+                keywords={text}
+                onSuggestionSelect={(suggestedText) => {
+                  onTextChange(suggestedText);
+                  setActiveTab("text"); // Switch back to text tab to see the result
+                }}
+              />
             </div>
           )}
 

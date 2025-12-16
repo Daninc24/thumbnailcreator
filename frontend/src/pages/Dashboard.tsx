@@ -9,7 +9,11 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ImageCard from "../components/ImageCard";
 import ThumbnailTemplateSelector from "../components/ThumbnailTemplateSelector";
 import ThumbnailCustomizer from "../components/ThumbnailCustomizer";
+import AdvancedTemplateEditor from "../components/AdvancedTemplateEditor";
+import TemplateManager from "../components/TemplateManager";
 import ImageUpload from "../components/ImageUpload";
+import VideoCreator from "../components/VideoCreator";
+import AIVideoGenerator from "../components/AIVideoGenerator";
 import QuotaDisplay from "../components/QuotaDisplay";
 import subscriptionService from "../services/subscriptionService";
 import { thumbnailTemplates } from "../types/templates";
@@ -47,6 +51,13 @@ const Dashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [customizerImage, setCustomizerImage] = useState<string>("");
+  const [showAdvancedEditor, setShowAdvancedEditor] = useState(false);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [editorTemplate, setEditorTemplate] = useState<ThumbnailTemplate | null>(null);
+  const [editorImage, setEditorImage] = useState<string>("");
+  const [showVideoCreator, setShowVideoCreator] = useState(false);
+  const [videoCreatorImage, setVideoCreatorImage] = useState<string>("");
+  const [showAIVideoGenerator, setShowAIVideoGenerator] = useState(false);
   
   // Bulk progress tracking
   const [bulkProgress, setBulkProgress] = useState(0);
@@ -142,6 +153,25 @@ const Dashboard = () => {
       
       // Refresh quota after successful operation
       subscriptionService.refreshSubscriptionData();
+    });
+
+    // Listen for video processing events
+    socket.on("video-processing-start", (data: { message: string; estimatedTime: number }) => {
+      toast.success(`${data.message} (Est. ${data.estimatedTime}s)`);
+    });
+
+    socket.on("video-processing-progress", (data: { progress: number; stage: string; frame?: number; totalFrames?: number }) => {
+      toast.info(`${data.stage} - ${data.progress}%`);
+    });
+
+    socket.on("video-processing-complete", (data: { message: string; videoUrl: string; downloadUrl: string }) => {
+      toast.success(data.message);
+      fetchImages(currentPage); // Refresh to show new video
+      subscriptionService.refreshSubscriptionData();
+    });
+
+    socket.on("video-processing-error", (data: { message: string; error: string }) => {
+      toast.error(`${data.message}: ${data.error}`);
     });
 
     // Listen for bulk progress events
@@ -320,6 +350,12 @@ const Dashboard = () => {
     setShowCustomizer(true);
   };
 
+  // Open video creator for specific image
+  const handleOpenVideoCreator = (imageUrl: string) => {
+    setVideoCreatorImage(imageUrl);
+    setShowVideoCreator(true);
+  };
+
   // Handle customization changes
   const handleCustomizationChange = (customTemplate: CustomizableTemplate) => {
     setCustomizedTemplate(customTemplate);
@@ -469,6 +505,53 @@ const Dashboard = () => {
     }
   };
 
+  // Advanced Template Editor handlers
+  const handleOpenAdvancedEditor = (template: ThumbnailTemplate, imageUrl: string) => {
+    setEditorTemplate(template);
+    setEditorImage(imageUrl);
+    setShowAdvancedEditor(true);
+  };
+
+  const handleAdvancedTemplateChange = (template: CustomizableTemplate) => {
+    // Handle template changes in advanced editor
+    console.log("Advanced template changed:", template);
+  };
+
+  const handleSaveAdvancedTemplate = async (template: CustomizableTemplate, name: string) => {
+    try {
+      const response = await axiosInstance.post("/templates/save", {
+        name,
+        category: template.category,
+        difficulty: template.difficulty,
+        textConfig: template.textConfig,
+        backgroundEffects: template.backgroundEffects,
+        decorativeElements: template.decorativeElements,
+        layers: template.customizations?.layers || [],
+        isPublic: false
+      });
+
+      toast.success("Template saved successfully!");
+      setShowAdvancedEditor(false);
+    } catch (error: any) {
+      console.error("Failed to save template:", error);
+      toast.error("Failed to save template");
+    }
+  };
+
+  // Template Manager handlers
+  const handleTemplateSelect = (template: ThumbnailTemplate) => {
+    setSelectedTemplate(template);
+    toast.success(`Selected template: ${template.name}`);
+  };
+
+  const handleTemplateEdit = (template: ThumbnailTemplate) => {
+    if (customizerImage) {
+      handleOpenAdvancedEditor(template, customizerImage);
+    } else {
+      toast.error("Please select an image first");
+    }
+  };
+
 
 
   return (
@@ -503,6 +586,59 @@ const Dashboard = () => {
               selectedTemplate={selectedTemplate}
               onTemplateChange={setSelectedTemplate}
             />
+
+            {/* Advanced Template Tools */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                onClick={() => setShowTemplateManager(true)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Templates</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (selectedTemplate && customizerImage) {
+                    handleOpenAdvancedEditor(selectedTemplate, customizerImage);
+                  } else {
+                    toast.error("Please select a template and image first");
+                  }
+                }}
+                disabled={!selectedTemplate || !customizerImage}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Editor</span>
+              </button>
+            </div>
+
+            {/* Video Creation Tools */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowVideoCreator(true)}
+                className="px-4 py-2 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Video Editor</span>
+              </button>
+
+              <button
+                onClick={() => setShowAIVideoGenerator(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span>AI Videos</span>
+              </button>
+            </div>
 
             {/* Quota Warning */}
             {quotaExceeded && subscription && (
@@ -717,6 +853,7 @@ const Dashboard = () => {
                   onRemoveBG={handleRemoveBG}
                   onGenerateThumbnail={handleGenerateThumbnail}
                   onCustomize={handleOpenCustomizer}
+                  onCreateVideo={handleOpenVideoCreator}
                   processing={processing}
                   errors={errors}
                   texts={texts}
@@ -790,11 +927,57 @@ const Dashboard = () => {
                   imageUrl={customizerImage}
                   onCustomizationChange={handleCustomizationChange}
                   onGenerate={handleCustomizerGenerate}
+                  onTextChange={(newText) => setTexts(prev => ({ ...prev, [customizerImage]: newText }))}
                   processing={processing[customizerImage] || false}
                 />
               </div>
             </div>
           </div>
+        )}
+
+        {/* Advanced Template Editor Modal */}
+        {showAdvancedEditor && editorTemplate && editorImage && (
+          <AdvancedTemplateEditor
+            template={editorTemplate}
+            imageUrl={editorImage}
+            onTemplateChange={handleAdvancedTemplateChange}
+            onSave={handleSaveAdvancedTemplate}
+            onClose={() => setShowAdvancedEditor(false)}
+          />
+        )}
+
+        {/* Template Manager Modal */}
+        {showTemplateManager && (
+          <TemplateManager
+            isOpen={showTemplateManager}
+            onClose={() => setShowTemplateManager(false)}
+            onTemplateSelect={handleTemplateSelect}
+            onTemplateEdit={handleTemplateEdit}
+          />
+        )}
+
+        {/* Video Creator Modal */}
+        {showVideoCreator && (
+          <VideoCreator
+            isOpen={showVideoCreator}
+            onClose={() => {
+              setShowVideoCreator(false);
+              setVideoCreatorImage("");
+            }}
+            initialImage={videoCreatorImage}
+          />
+        )}
+
+        {/* AI Video Generator Modal */}
+        {showAIVideoGenerator && (
+          <AIVideoGenerator
+            isOpen={showAIVideoGenerator}
+            onClose={() => setShowAIVideoGenerator(false)}
+            onVideoGenerated={(videoId) => {
+              toast.success(`AI video generation started! Video ID: ${videoId}`);
+              fetchImages(currentPage); // Refresh to show processing status
+            }}
+          />
         )}
       </div>
     </div>
