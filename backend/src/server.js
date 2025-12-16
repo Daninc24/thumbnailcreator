@@ -7,6 +7,8 @@ import { connectDB } from "./config/db.js";
 import path from "path";
 import authRoutes from "./routes/authRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -32,6 +34,8 @@ app.get("/", (req, res) => {
 app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
@@ -46,7 +50,13 @@ export const io = new Server(server, {
   }
 });
 
-// Set io instance for use in controllers
+// Attach io to app so controllers can access it via req.app.get("io")
+app.set("io", io);
+
+// Make io globally available for payment controllers
+global.io = io;
+
+// Set io instance for use in controllers (backward compatibility)
 import { setIO } from "./controllers/imageController.js";
 setIO(io);
 
